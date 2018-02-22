@@ -1,11 +1,5 @@
 import numpy as np
-
-def one_hot(labels):
-    k = labels.max()
-    one_hot = np.zeros((len(labels),k+1))
-    labels = np.reshape(labels,(len(labels,)))
-    one_hot[np.arange(len(labels)),labels] = 1
-    return one_hot
+import utils
 
 class Trainset():
     def __init__(self):
@@ -25,18 +19,18 @@ class Testset():
         self.data = None
         self.labels = None
 
-
 class Dataset():
-    def __init__(self):
+    def __init__(self, k):
+        self.k = k
         self.train = Trainset()
         self.test = Testset()
 
     def setTrainData(self,data, labels = None):
         self.train.data = data
         if type(labels) is np.ndarray:
-            self.train.labels = one_hot(labels)
+            self.train.labels = utils.one_hot(labels, self.k)
 
     def setTestData(self, data, labels = None):
         self.test.data = data
         if type(labels) is np.ndarray:
-            self.test.labels = one_hot(labels)
+            self.test.labels = utils.one_hot(labels, self.k)

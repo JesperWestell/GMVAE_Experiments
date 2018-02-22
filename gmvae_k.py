@@ -3,40 +3,50 @@ import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 import sys
 from gmvae_model import GMVAE
-from utils import plot_r_by_c_images, load_and_mix_data, plot_scatter
+from utils import *
 
 #mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+def main():
+    try:
+        k = int(sys.argv[1])
+    except IndexError:
+        k = 2
+        print('Setting default value k={0}'.format(k))
 
-try:
-    k = int(sys.argv[1])
-except IndexError:
-    k=2
-    print('Setting default value k={0}'.format(k))
+    n_x = 2
+    n_z = 2
 
-dataset = load_and_mix_data('generated_from_cluster',k)
+    dataset = load_and_mix_data('generated_from_cluster',k,True)
 
-model = GMVAE(k=k,n_x=2)
+    model = GMVAE(k=k, n_x=n_x, n_z=n_z)
 
-saver = tf.train.Saver(keep_checkpoint_every_n_hours=4)
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver(keep_checkpoint_every_n_hours=4)
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
-    # Restore parameters from file (optional)
-    saver.restore(sess, './savedModels/2018-2-20/model-30')
-    #model.test_stuff(sess, dataset)
+        # Restore parameters from file (optional)
+        saver.restore(sess, './savedModels/2018-2-21/model-50')
 
-    # TRAINING
-    sess_info = (sess, saver)
-    #model.train('logs/gmvae_k={:d}.log'.format(k), dataset, sess_info, epochs=30)
+        # TRAINING
+        sess_info = (sess, saver)
+        #model.train('logs/gmvae_k={:d}.log'.format(k), dataset, sess_info, epochs=50)
+        
+        # SCATTER PLOT
+        plot_z_means(sess,
+                     dataset.test.data,
+                     dataset.test.labels,
+                     model,
+                     k,
+                     n_z)
+        plot_gmvae_output(sess,
+                          dataset.test.data,
+                          dataset.test.labels,
+                          model,
+                          k)
 
-    # SCATTER PLOT
+        sample_and_plot_z(sess, k, model, 300)
+        sample_and_plot_x(sess, k, model, 300)
 
-    zm0, zm1 = sess.run([model.zm[0],model.zm[1]], feed_dict={'x:0':dataset.test.data})
-    labels = np.argmax(dataset.test.labels,axis=1)
-    zm = np.concatenate((zm0[labels == 0],zm1[labels == 1]))
-    plot_scatter(zm,labels,'scatter_predicted_zm.png')
 
-    x0, x1 = sess.run([model.px_logit[0], model.px_logit[1]],
-                        feed_dict={'x:0': dataset.test.data})
-    x = np.concatenate((x0[labels == 0], x1[labels == 1]))
-    plot_scatter(x, labels, 'scatter_predicted_x.png')
+
+main()

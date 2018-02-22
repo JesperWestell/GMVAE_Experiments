@@ -11,12 +11,12 @@ def qy_graph(x, k=10):
         h1 = tf.contrib.layers.fully_connected(x, 2, scope='layer1',
                                                      activation_fn=tf.nn.relu,
                                                      reuse=reuse)
-        qy_logit = tf.contrib.layers.fully_connected(h1, k, scope='logit',
+        qy_logit = tf.contrib.layers.fully_connected(x, k, scope='logit',
                                                activation_fn=tf.nn.relu, reuse=reuse)
         qy = tf.nn.softmax(qy_logit, name='prob')
     return qy_logit, qy
 
-def qz_graph(x, y):
+def qz_graph(x, y, n_z):
     reuse = len(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='qz')) > 0
     # -- q(z)
     with tf.variable_scope('qz'):
@@ -24,10 +24,10 @@ def qz_graph(x, y):
         h1 = tf.contrib.layers.fully_connected(xy, 4, scope='layer1',
                                                activation_fn=tf.nn.relu,
                                                reuse=reuse)
-        zm = tf.contrib.layers.fully_connected(h1, 2, scope='zm',
+        zm = tf.contrib.layers.fully_connected(h1, n_z, scope='zm',
                                                activation_fn=None,
                                                reuse=reuse)
-        zv = tf.contrib.layers.fully_connected(h1, 2, scope='zv',
+        zv = tf.contrib.layers.fully_connected(h1, n_z, scope='zv',
                                                activation_fn=tf.nn.softplus,
                                                reuse=reuse)
         z = gaussian_sample(zm, zv, 'z')
@@ -43,14 +43,14 @@ def z_graph(zm,zv):
         z = tf.identity(z, name='z_sample')
     return z
 
-def pz_graph(y):
+def pz_graph(y, n_z):
     reuse = len(
         tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='pz')) > 0
     # -- p(z)
     with tf.variable_scope('pz'):
-        zm = tf.contrib.layers.fully_connected(y, 2, scope='zm',
+        zm = tf.contrib.layers.fully_connected(y, n_z, scope='zm',
                                                activation_fn=None, reuse=reuse)
-        zv = tf.contrib.layers.fully_connected(y, 2, scope='zv',
+        zv = tf.contrib.layers.fully_connected(y, n_z, scope='zv',
                                                activation_fn=tf.nn.softplus,
                                                reuse=reuse)
     return y, zm, zv
@@ -73,14 +73,14 @@ def px_fixed_graph(z):
         #px_logit = tf.identity(px_logit,name='x')
     return px_logit
 
-def px_graph(z):
+def px_graph(z, n_x):
     reuse = len(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='px')) > 0
     # -- p(x)
     with tf.variable_scope('px'):
         h = tf.contrib.layers.fully_connected(z, 2, scope='layer1',
                                     activation_fn=tf.nn.relu,
                                     reuse=reuse)
-        px_logit = tf.contrib.layers.fully_connected(h, 2, scope='output',
+        px_logit = tf.contrib.layers.fully_connected(h, n_x, scope='output',
                                                      activation_fn=None,
                                                      reuse=reuse)
         #px_logit = tf.identity(px_logit,name='x')

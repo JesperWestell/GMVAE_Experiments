@@ -6,9 +6,10 @@ from utils import open_file, progbar, stream_print, test_acc, save_params, get_v
 from tensorbayes.nbutils import show_default_graph
 
 class GMVAE():
-    def __init__(self, k=10, n_x=784):
+    def __init__(self, k=10, n_x=784, n_z = 64):
         self.k = k
         self.n_x = n_x
+        self.n_z = n_z
         tf.reset_default_graph()
         x = placeholder((None, n_x), name='x')
 
@@ -31,11 +32,11 @@ class GMVAE():
             with tf.name_scope('graphs/hot_at{:d}'.format(i)):
                 y = tf.add(y_,
                            constant(np.eye(k)[i], name='hot_at_{:d}'.format(i)))
-                self.z[i], self.zm[i], self.zv[i] = qz_graph(x, y)
+                self.z[i], self.zm[i], self.zv[i] = qz_graph(x, y, n_z)
                 self.y[i], \
                 self.zm_prior[i], \
-                self.zv_prior[i] = pz_graph(y)
-                self.px_logit[i] = px_graph(self.z[i])
+                self.zv_prior[i] = pz_graph(y, n_z)
+                self.px_logit[i] = px_graph(self.z[i], n_x)
 
         # Aggressive name scoping for pretty graph visualization :P
         with tf.name_scope('loss'):
@@ -60,7 +61,6 @@ class GMVAE():
         (sess, saver) = sess_info
         f = open_file(fname)
         iterep = 500
-        #self.print_weights(sess)
         for i in range(iterep * epochs):
             batch = dataset.train.next_batch(100)
             sess.run(self.train_step,
@@ -82,56 +82,8 @@ class GMVAE():
                 string = ('{:10.2e},{:10.2e},{:10.2e},{:10.2e},{:10.2e},{:10d}'
                           .format(a, b, c, d, e, int((i + 1) / iterep)))
                 stream_print(f, string)
-                #self.print_weights(sess)
-                self.print_means(sess)
-            # Saves parameters every 5 epochs
-            if (i + 1) % (5 * iterep) == 0:
+            # Saves parameters every 10 epochs
+            if (i + 1) % (10 * iterep) == 0:
                 print('saving')
                 save_params(saver, sess, (i + 1) // iterep)
         if f is not None: f.close()
-
-    def sample_z(self, sess, i, num_samples = 6):
-        # Need to feed x to get proper shape of input
-        zm, zv = sess.run([self.zm_prior[i], self.zv_prior[i]],
-                           feed_dict={'x:0':np.zeros((num_samples,self.n_x))})
-        z_sample = np.random.normal(loc=zm,scale=np.sqrt(zv))
-        return z_sample
-
-    def sample_x(self, sess, i = None, num_samples = 6):
-        if i == None:
-            i = np.random.randint(0, self.k)
-            print('Cat: {}'.format(i))
-        z = self.sample_z(sess,i,num_samples=num_samples)
-        x = sess.run(self.px_logit[i],
-                     feed_dict={
-                         'graphs/hot_at{:d}/qz/z_sample:0'.format(i): z})
-        print(x)
-
-    def test_stuff(self,sess,dataset=None):
-        zm0, zv0 = sess.run([self.zm_prior[0], self.zv_prior[0]],
-                          feed_dict={'x:0': np.zeros((1, self.n_x))})
-        zm1, zv1 = sess.run([self.zm_prior[1], self.zv_prior[1]],
-                            feed_dict={'x:0': np.zeros((1, self.n_x))})
-        print(zm0)
-        print(zm1)
-
-    def print_means(self, sess):
-        y0, zm0, zv0 = sess.run([self.y[0], self.zm_prior[0], self.zv_prior[0]],
-                            feed_dict={'x:0': np.zeros((1, self.n_x))})
-        y1, zm1, zv1 = sess.run([self.y[1], self.zm_prior[1], self.zv_prior[1]],
-                            feed_dict={'x:0': np.zeros((1, self.n_x))})
-        print('zm0_prior: {0}'.format(zm0))
-        print('zm1_prior: {0}'.format(zm1))
-
-    def print_weights(self, sess):
-        # weights
-        #vars = get_var('qy/logit/weights')
-        #print('qy​/logit: \n {}'.format(sess.run(vars)))
-        #vars = get_var('px/layer1/weights')
-        #print('px/layer1: \n {}'.format(sess.run(vars)))
-        #vars = get_var('px/output/weights')
-        #print('px/output: \n {}'.format(sess.run(vars)))
-        vars = get_var('pz/zm/weights')
-        print('pz/zm/: \n {}'.format(sess.run(vars)))
-        vars = get_var('pz/zm/biases')
-        print('pz/zm/: \n {}'.format(sess.run(vars)))
