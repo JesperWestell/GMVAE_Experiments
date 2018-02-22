@@ -30,9 +30,15 @@ def main():
         # TRAINING
         sess_info = (sess, saver)
         #model.train('logs/gmvae_k={:d}.log'.format(k), dataset, sess_info, epochs=50)
-        
+
         # SCATTER PLOT
         plot_z_means(sess,
+                     dataset.test.data,
+                     dataset.test.labels,
+                     model,
+                     k,
+                     n_z)
+        plot_z(sess,
                      dataset.test.data,
                      dataset.test.labels,
                      model,

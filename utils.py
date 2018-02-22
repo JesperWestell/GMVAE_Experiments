@@ -27,6 +27,22 @@ def plot_z_means(sess, X, Y, model, k, n_z):
     labels = np.argmax(Y, axis=1)
     plot_labeled_data(zm, labels, 'scatter_predicted_zm.png')
 
+def plot_z(sess, X, Y, model, k, n_z):
+    '''
+        Given examples data, computes and plots their latent variables
+    '''
+    all_z = np.zeros((len(X), k, n_z))
+    for i in range(k):
+        all_z[:, i] = sess.run(model.z[i],
+                                feed_dict={'x:0': X})
+
+    qy = sess.run(model.qy, feed_dict={'x:0': X})
+    y_pred = one_hot(qy.argmax(axis=1), depth=k).astype(bool)
+
+    z = all_z[y_pred]
+    labels = np.argmax(Y, axis=1)
+    plot_labeled_data(z, labels, 'scatter_predicted_z.png')
+
 def plot_gmvae_output(sess, X, Y, model, k):
     '''
         Given examples data, computes and plots the output of the examples

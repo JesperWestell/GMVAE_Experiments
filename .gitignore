@@ -104,4 +104,7 @@ generatedData/*
 .DS_Store
 
 # Logs
-logs/*
+logs/
+
+# Images
+*.png
