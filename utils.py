@@ -37,7 +37,8 @@ def plot_z(sess, X, Y, model, k, n_z):
                                 feed_dict={'x:0': X})
 
     qy = sess.run(model.qy, feed_dict={'x:0': X})
-    y_pred = one_hot(qy.argmax(axis=1), depth=k).astype(bool)
+    category = qy.argmax(axis=1)
+    y_pred = one_hot(category, depth=k).astype(bool)
 
     z = all_z[y_pred]
     labels = np.argmax(Y, axis=1)
